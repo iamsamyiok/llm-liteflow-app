@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  liteflow:
+    build: .
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 可选：添加反向代理
+  nginx-proxy:
+    image: nginx:alpine
+    ports:
+      - "443:443"
+    volumes:
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./proxy.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - liteflow
+    restart: unless-stopped
+    profiles:
+      - ssl
+
