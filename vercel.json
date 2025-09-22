@@ -1,8 +1,8 @@
 {
-  "buildCommand": "pnpm run build",  // 改为 pnpm
+  "buildCommand": "npm run build",  // 改为 pnpm
   "outputDirectory": "dist",
-  "devCommand": "pnpm run dev",      // 改为 pnpm
-  "installCommand": "pnpm install",  // 改为 pnpm
+  "devCommand": "npm run dev",      // 改为 pnpm
+  "installCommand": "npm install",  // 改为 pnpm
   "framework": "vite",
   "rewrites": [
     {
