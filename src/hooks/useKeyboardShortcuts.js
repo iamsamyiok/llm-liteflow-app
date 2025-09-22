@@ -46,6 +46,7 @@ export const useKeyboardShortcuts = (callbacks = {}) => {
 
       // Delete: 删除选中节点
       if (key === 'Delete') {
+        event.preventDefault();
         callbacks.onDelete?.();
       }
 

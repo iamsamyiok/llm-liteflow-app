@@ -1,4 +1,6 @@
 // 工作流执行引擎
+import { VariableResolver } from './variableResolver';
+
 export class ExecutionEngine {
   constructor(nodes, edges, llmConfig, updateNodeData) {
     this.nodes = nodes;
@@ -6,6 +8,7 @@ export class ExecutionEngine {
     this.llmConfig = llmConfig;
     this.updateNodeData = updateNodeData;
     this.nodeOutputs = new Map();
+    this.variableResolver = new VariableResolver(nodes, edges, this.nodeOutputs);
   }
 
   // 拓扑排序，确定执行顺序
@@ -92,11 +95,46 @@ export class ExecutionEngine {
     
     try {
       const inputs = this.getNodeInputs(node.id);
-      const prompt = inputs.join('\n');
+      const inputText = inputs.join('\n');
 
       if (!this.llmConfig.baseUrl || !this.llmConfig.apiKey) {
         throw new Error('请先配置LLM设置');
       }
+
+      // 构建消息数组
+      const messages = [];
+      
+      // 添加系统提示词（支持变量引用）
+      if (node.data.systemPrompt) {
+        const resolvedSystemPrompt = this.variableResolver.resolveVariables(
+          node.data.systemPrompt, 
+          node.id
+        );
+        messages.push({
+          role: 'system',
+          content: resolvedSystemPrompt
+        });
+      }
+      
+      // 处理用户提示词模板（支持变量引用）
+      let userContent;
+      if (node.data.userPrompt) {
+        // 先解析变量引用，再替换{{input}}
+        let resolvedUserPrompt = this.variableResolver.resolveVariables(
+          node.data.userPrompt, 
+          node.id
+        );
+        // 替换剩余的{{input}}变量（向后兼容）
+        userContent = resolvedUserPrompt.replace(/\{\{input\}\}/g, inputText);
+      } else {
+        // 如果没有用户提示词模板，直接使用输入
+        userContent = inputText;
+      }
+      
+      messages.push({
+        role: 'user',
+        content: userContent
+      });
 
       const response = await fetch(`${this.llmConfig.baseUrl}/chat/completions`, {
         method: 'POST',
@@ -106,12 +144,7 @@ export class ExecutionEngine {
         },
         body: JSON.stringify({
           model: this.llmConfig.modelName,
-          messages: [
-            {
-              role: 'user',
-              content: prompt,
-            },
-          ],
+          messages: messages,
           temperature: 0.7,
         }),
       });
@@ -145,7 +178,10 @@ export class ExecutionEngine {
     
     try {
       const inputs = this.getNodeInputs(node.id);
-      const code = node.data.code || '';
+      let code = node.data.code || '';
+      
+      // 解析代码中的变量引用
+      code = this.variableResolver.resolveVariables(code, node.id);
       
       // 创建一个安全的执行环境
       const func = new Function('inputs', 'console', code + '\nreturn result;');

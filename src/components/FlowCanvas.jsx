@@ -66,6 +66,20 @@ const FlowCanvas = () => {
     [localEdges, syncEdges]
   );
 
+  const onNodesDelete = useCallback((nodesToDelete) => {
+    const newNodes = localNodes.filter((node) => !nodesToDelete.find((n) => n.id === node.id));
+    const newEdges = localEdges.filter((edge) => 
+      !nodesToDelete.some((node) => edge.source === node.id || edge.target === node.id)
+    );
+    syncNodes(newNodes);
+    syncEdges(newEdges);
+  }, [localNodes, localEdges, syncNodes, syncEdges]);
+
+  const onEdgesDelete = useCallback((edgesToDelete) => {
+    const newEdges = localEdges.filter((edge) => !edgesToDelete.find((e) => e.id === edge.id));
+    syncEdges(newEdges);
+  }, [localEdges, syncEdges]);
+
   const onDragOver = useCallback((event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
@@ -134,10 +148,13 @@ const FlowCanvas = () => {
         onNodesChange={onNodesChangeHandler}
         onEdgesChange={onEdgesChangeHandler}
         onConnect={onConnect}
+        onNodesDelete={onNodesDelete}
+        onEdgesDelete={onEdgesDelete}
         onDrop={onDrop}
         onDragOver={onDragOver}
         nodeTypes={nodeTypes}
         fitView
+        deleteKeyCode="Delete"
         attributionPosition="top-right"
       >
         <Controls />

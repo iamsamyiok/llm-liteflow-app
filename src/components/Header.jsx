@@ -66,6 +66,11 @@ const Header = () => {
     onSave: () => setShowWorkflow(true),
     onOpen: () => setShowWorkflow(true),
     onHelp: () => setShowHelp(true),
+    onDelete: () => {
+      // 删除选中的节点将由ReactFlow自动处理
+      // 这里可以添加额外的删除逻辑或通知
+      showNotification('info', '删除节点', '选中节点并按Delete键删除');
+    },
     onEscape: () => {
       setShowSettings(false);
       setShowWorkflow(false);
